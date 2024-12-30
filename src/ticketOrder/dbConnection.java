@@ -11,7 +11,7 @@ import java.sql.*;
  * @author Lenovo
  */
 public class dbConnection {
-    private static final String URL="jdbc:mysql://localhost:3306/db_tickets";
+    private static final String URL="jdbc:mysql://localhost:3306/db_orderticket";
     private static final String USER="root";
     private static final String PASSWORD="";
     

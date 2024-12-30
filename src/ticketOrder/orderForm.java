@@ -6,6 +6,8 @@ package ticketOrder;
 
 import java.sql.*;
 import java.text.*;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -20,6 +22,7 @@ public class orderForm extends javax.swing.JFrame {
      */
     public orderForm() {
         initComponents();
+        loadTableData();
     }
 
     /**
@@ -54,7 +57,7 @@ public class orderForm extends javax.swing.JFrame {
 
         jLabel1.setText("Sistem Pemesanan Tiket");
 
-        jLabel2.setText("Nama Customer");
+        jLabel2.setText("Nama");
 
         jLabel3.setText("Tanggal");
 
@@ -69,7 +72,7 @@ public class orderForm extends javax.swing.JFrame {
 
         jLabel5.setText("Kuantitas");
 
-        jLabel6.setText("Harga");
+        jLabel6.setText("Harga per Tiket");
 
         txtHarga.setText("Rp. 0");
 
@@ -178,7 +181,7 @@ public class orderForm extends javax.swing.JFrame {
                     .addComponent(btnHapus))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 10, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
                 .addComponent(lblKeterangan))
         );
 
@@ -206,16 +209,21 @@ public class orderForm extends javax.swing.JFrame {
         String selectedTipe = jcbTipe.getSelectedItem().toString();
         
         String keterangan = "";
+        String harga = "";
         
         if(selectedTipe.equalsIgnoreCase("Fast Track")){
-            keterangan = "Benefit: ";
+            keterangan = "Benefit: Antrian yang lebih singkat, Akses Prioritas, Peluang untuk mengunjungi banyak wahana";
+            harga = "Rp 500.000";
         } else if (selectedTipe.equalsIgnoreCase("Regular")){
-            keterangan = "Kouta: ";
+            keterangan = "Kouta: 50 tiket";
+            harga = "Rp 200.000";
         } else {
-            keterangan = "Silahkan pilih tipe tiket";
+            keterangan = "Silakan pilih tipe tiket yang ingin Anda beli.";
+            harga = "Rp 0";
         }
         
         lblKeterangan.setText(keterangan);
+        txtHarga.setText(harga);
     }//GEN-LAST:event_jcbTipeActionPerformed
 
     private void btnTambahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahActionPerformed
@@ -225,7 +233,7 @@ public class orderForm extends javax.swing.JFrame {
         String kuantitasStr = txtKuantitas.getText().trim();
         
         if (nama.isEmpty() || tanggal.isEmpty() || tipeTiket.isEmpty() || kuantitasStr.isEmpty()){
-            JOptionPane.showMessageDialog(this, "Semua kolom harus diisi", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Mohon untuk mengisi semua kolom yang tersedia.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
@@ -236,12 +244,12 @@ public class orderForm extends javax.swing.JFrame {
                 throw new NumberFormatException();
             }
         } catch (NumberFormatException e){
-            JOptionPane.showMessageDialog(this, "Kuantitas harus berupa angka", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Silakan isi kembali kuantitas yang Anda inginkan dengan menggunakan angka.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
         if (!validateDate(tanggal)){
-            JOptionPane.showMessageDialog(this, "Format tanggal tidak sesuai", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Mohon mengisi format tanggal dengan benar menggunakan format dd-mm-yyyy agar sesuai.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
@@ -258,19 +266,19 @@ public class orderForm extends javax.swing.JFrame {
                     ps.setInt(4, kuantitas);
                     ps.setDouble(5, totalHarga);
                     ps.executeUpdate();
-                    JOptionPane.showMessageDialog(this, "Data berhasil ditambahkan");
+                    JOptionPane.showMessageDialog(this, "Data Anda telah berhasil ditambahkan! Terima kasih.");
                     loadTableData();
                     clearForm();
                 }
             } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this, "Gagal menambahkan data! Pesan error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Penambahan data gagal. Pesan error: " + ex.getMessage());
             }
     }//GEN-LAST:event_btnTambahActionPerformed
 
     private void btnUbahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUbahActionPerformed
         int selectedRow = tblData.getSelectedRow();
         if (selectedRow == -1){
-            JOptionPane.showMessageDialog(this, "Pilih data yang ingin diubah");
+            JOptionPane.showMessageDialog(this, "Silakan pilih data yang ingin Anda ubah untuk melanjutkan.");
             return;
         }
         
@@ -280,7 +288,7 @@ public class orderForm extends javax.swing.JFrame {
         String kuantitasStr = txtKuantitas.getText().trim();
         
         if (nama.isEmpty() || tanggal.isEmpty() || tipeTiket.isEmpty() || kuantitasStr.isEmpty()){
-            JOptionPane.showMessageDialog(this, "Semua kolom harus diisi", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Mohon untuk mengisi semua kolom yang tersedia.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
@@ -291,50 +299,64 @@ public class orderForm extends javax.swing.JFrame {
                 throw new NumberFormatException();
             }
         } catch (NumberFormatException e){
-            JOptionPane.showMessageDialog(this, "Kuantitas harus berupa angka", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Silakan isi kembali kuantitas yang Anda inginkan dengan menggunakan angka.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
         if (!validateDate(tanggal)){
-            JOptionPane.showMessageDialog(this, "Format tanggal tidak sesuai", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Mohon mengisi format tanggal dengan benar menggunakan format dd-mm-yyyy agar sesuai.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
         String orderID = tblData.getValueAt(selectedRow, 0).toString();
         
+        Map<String, Integer> hargaTiketMap = new HashMap<>();
+        hargaTiketMap.put("Regular", 200000);
+        hargaTiketMap.put("Fast Track", 500000);
+        
+        int hargaPerTiket = hargaTiketMap.getOrDefault(tipeTiket, 0);
+        if(hargaPerTiket == 0){
+            JOptionPane.showMessageDialog(this, "Tipe tiket yang dipilih tidak valid", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        int totalHarga = hargaPerTiket * kuantitas;
+        
         String mysqlTanggal = convertToMySQLDate(tanggal);
         try (Connection conn = dbConnection.getConnection()) {
-                String query = "UPDATE orders SET custName = ?, date = ?, ticketType = ?, quantity = ? WHERE id = ?";
+                String query = "UPDATE orders SET custName = ?, date = ?, ticketType = ?, quantity = ?, price = ? WHERE id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, nama);
                     ps.setString(2, mysqlTanggal);
                     ps.setString(3, tipeTiket);
                     ps.setInt(4, kuantitas);
-                    ps.setString(5, orderID);
+                    ps.setInt(5, totalHarga);
+                    ps.setString(6, orderID);
                     
                     int updatedRows = ps.executeUpdate();
                     if (updatedRows > 0){
-                        JOptionPane.showMessageDialog(this, "Data berhasil diubah");
+                        JOptionPane.showMessageDialog(this, "Data Anda telah berhasil diubah! Terima kasih.");
                         loadTableData();
                         clearForm();
                     } else {
-                        JOptionPane.showMessageDialog(this, "Data gagal diubah");
+                        JOptionPane.showMessageDialog(this, "Gagal mengubah data. Silakan coba lagi.");
                     }
                     
                 }
             } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this, "Gagal mengubah data! Pesan error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Pengubahan data gagal. Pesan error: " + ex.getMessage());
+                
             }
     }//GEN-LAST:event_btnUbahActionPerformed
 
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
         int selectedRow = tblData.getSelectedRow();
         if (selectedRow == -1){
-            JOptionPane.showMessageDialog(this, "Pilih data yang ingin diubah");
+            JOptionPane.showMessageDialog(this, "Silakan pilih data yang ingin Anda hapus untuk melanjutkan.");
             return;
         }
         
-        int confirm = JOptionPane.showConfirmDialog(this, "Apa anda yakin ingin menghapus data ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this, "Apakah Anda yakin ingin menghapus data ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION){
             return;
         }
@@ -346,11 +368,11 @@ public class orderForm extends javax.swing.JFrame {
             try(PreparedStatement ps = conn.prepareStatement(query)){
                 ps.setString(1, selectedID);
                 ps.executeUpdate();
-                JOptionPane.showMessageDialog(this, "Data berhasil dihapus");
+                JOptionPane.showMessageDialog(this, "Data telah berhasil dihapus dari sistem.");
                 loadTableData();
             }
         } catch (SQLException ex){
-            JOptionPane.showMessageDialog(this, "Gagal menghapus data! Pesan error: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Penghapusan data gagal. Pesan error: " + ex.getMessage());
         }
     }//GEN-LAST:event_btnHapusActionPerformed
 
@@ -448,7 +470,7 @@ public class orderForm extends javax.swing.JFrame {
         }
 
     } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Gagal memuat data dari database: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(this, "Pemuatan data dari database gagal. Pesan error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
 
@@ -457,7 +479,7 @@ public class orderForm extends javax.swing.JFrame {
         txtTanggal.setText("");
         jcbTipe.setSelectedIndex(0);
         txtKuantitas.setText("");
-        txtHarga.setText("");
+        txtHarga.setText("Rp 0");
     }
 
 }
