@@ -6,8 +6,6 @@ package ticketOrder;
 
 import java.sql.*;
 import java.text.*;
-import java.util.HashMap;
-import java.util.Map;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -235,74 +233,55 @@ public class orderForm extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jcbTipeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jcbTipeActionPerformed
-        // mendapatkan tipe tiket yg dipilih oleh pengguna
         String selectedTipe = jcbTipe.getSelectedItem().toString();
+        ticket selectedTicket;
         
-        // mengatur keterangan dan harga berdasarkan tipe tiket yg dipilih
-        String keterangan = "";
-        String harga = "";
-        
-        // jika tipe tiket = fast track
         if(selectedTipe.equalsIgnoreCase("Fast Track")){
-            keterangan = "Benefit: Antrian yang lebih singkat, Akses Prioritas, Peluang untuk mengunjungi banyak wahana";
-            harga = "Rp 500.000";
-        // jika tipe tiket = regular
+            selectedTicket = new fastTrack("Fast Track", 500000, "Antrian yang lebih singkat, Akses Prioritas, Peluang untuk mengunjungi banyak wahana");
+            lblKeterangan.setText("Benefit: "+((fastTrack)selectedTicket).getBenefit());
+            txtHarga.setText("Rp. "+(int)selectedTicket.getPrice());
         } else if (selectedTipe.equalsIgnoreCase("Regular")){
-            keterangan = "Kouta: 50 tiket";
-            harga = "Rp 200.000";
-        // jika blm memilih tipe tiket 
+            selectedTicket = new regular("Regular", 200000, 50);
+            lblKeterangan.setText("Kouta: "+((regular)selectedTicket).getKouta());
+            txtHarga.setText("Rp. "+(int)selectedTicket.getPrice());
         } else {
-            keterangan = "Silakan pilih tipe tiket yang ingin Anda beli.";
-            harga = "Rp 0";
+            lblKeterangan.setText("Silakan pilih tipe tiket yang ingin Anda beli.");
+            txtHarga.setText("Rp. 0");
         }
-        
-        // menampilkan keterangan pd lblKeterangan, harga pd txtHarga
-        lblKeterangan.setText(keterangan);
-        txtHarga.setText(harga);
     }//GEN-LAST:event_jcbTipeActionPerformed
 
     private void btnTambahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahActionPerformed
-        // mengambil input dari form(nama, tanggal, tipeTiket, kuantitas)
         String nama = txtNama.getText().trim();
         String tanggal = txtTanggal.getText().trim();
         String tipeTiket = jcbTipe.getSelectedItem().toString();
         String kuantitasStr = txtKuantitas.getText().trim();
         
-        // jika ada kolom yg kosong
         if (nama.isEmpty() || tanggal.isEmpty() || tipeTiket.isEmpty() || kuantitasStr.isEmpty()){
             JOptionPane.showMessageDialog(this, "Mohon untuk mengisi semua kolom yang tersedia.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
         int kuantitas;
-        // mengonversi input kuantitas menjadi angka dan memeriksa apakah valid
         try {
             kuantitas = Integer.parseInt(kuantitasStr);
             if (kuantitas <= 0){
                 throw new NumberFormatException();
             }
-        // jika tdk valid
         } catch (NumberFormatException e){
             JOptionPane.showMessageDialog(this, "Silakan isi kembali kuantitas yang Anda inginkan dengan menggunakan angka.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        // memeriksa format tanggal, jika tdk sesuai format dd-mm-yyyy
         if (!validateDate(tanggal)){
             JOptionPane.showMessageDialog(this, "Mohon mengisi format tanggal dengan benar menggunakan format dd-mm-yyyy agar sesuai.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        // menentukan harga berdasarkan tipeTiket yg dipilih (Fast Track/ Regular)
-        int hargaPerTiket = tipeTiket.equalsIgnoreCase("Fast Track") ? 500000 : 200000;
-        // menghitung total harga berdasarkan kuantitas
-        int totalHarga = hargaPerTiket * kuantitas;
-        
-        // mengonversi tanggal ke format yg sesuai utk MySQL
+        int totalHarga = (int)calculatePrice(tipeTiket, kuantitas);
+
         String mysqlTanggal = convertToMySQLDate(tanggal);
         try (Connection conn = dbConnection.getConnection()) {
                 String query = "INSERT INTO orders (custName, date, ticketType, quantity, price) VALUES (?, ?, ?, ?, ?)";
-                // menyimpan data pesanan ke dlm db menggunakan PreparedStatement
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, nama);
                     ps.setString(2, mysqlTanggal);
@@ -310,81 +289,55 @@ public class orderForm extends javax.swing.JFrame {
                     ps.setInt(4, kuantitas);
                     ps.setDouble(5, totalHarga);
                     ps.executeUpdate();
-                    // jika data berhasil disimpan
                     JOptionPane.showMessageDialog(this, "Data Anda telah berhasil ditambahkan! Terima kasih.");
-                    // memuat ulang data tbl
                     loadTableData();
-                    // membersihkan form
                     clearForm();
                 }
-            // jika ada kesalahan
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(this, "Penambahan data gagal. Pesan error: " + ex.getMessage());
             }
     }//GEN-LAST:event_btnTambahActionPerformed
 
     private void btnUbahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUbahActionPerformed
-        // mengecek apakah ada baris yg dipilih di tbl
         int selectedRow = tblData.getSelectedRow();
         if (selectedRow == -1){
             JOptionPane.showMessageDialog(this, "Silakan pilih data yang ingin Anda ubah untuk melanjutkan.");
             return;
         }
         
-        // mengambil input dari form(nama, tanggal, tipeTiket, kuantitas)
         String nama = txtNama.getText().trim();
         String tanggal = txtTanggal.getText().trim();
         String tipeTiket = jcbTipe.getSelectedItem().toString();
         String kuantitasStr = txtKuantitas.getText().trim();
         
-        // jika ada kolom yg kosong
         if (nama.isEmpty() || tanggal.isEmpty() || tipeTiket.isEmpty() || kuantitasStr.isEmpty()){
             JOptionPane.showMessageDialog(this, "Mohon untuk mengisi semua kolom yang tersedia.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
         int kuantitas;
-        // mengonversi input kuantitas menjadi angka dan memeriksa apakah valid
         try {
             kuantitas = Integer.parseInt(kuantitasStr);
             if (kuantitas <= 0){
                 throw new NumberFormatException();
             }
-        // jika tdk valid
         } catch (NumberFormatException e){
             JOptionPane.showMessageDialog(this, "Silakan isi kembali kuantitas yang Anda inginkan dengan menggunakan angka.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        // memeriksa format tanggal, jika tdk sesuai format dd-mm-yyyy
         if (!validateDate(tanggal)){
             JOptionPane.showMessageDialog(this, "Mohon mengisi format tanggal dengan benar menggunakan format dd-mm-yyyy agar sesuai.", "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        // mendapatkan id pesanan yg dipilih dari tabel utk diperbarui
         String orderID = tblData.getValueAt(selectedRow, 0).toString();
         
-        // menggunakan map utk menentukan harga tiket berdasarkan tipeTiket yg dipilih
-        Map<String, Integer> hargaTiketMap = new HashMap<>();
-        hargaTiketMap.put("Regular", 200000);
-        hargaTiketMap.put("Fast Track", 500000);
+        int totalHarga = (int)calculatePrice(tipeTiket, kuantitas);
         
-        int hargaPerTiket = hargaTiketMap.getOrDefault(tipeTiket, 0);
-        // jika tipeTiket tdk valid
-        if(hargaPerTiket == 0){
-            JOptionPane.showMessageDialog(this, "Tipe tiket yang dipilih tidak valid", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // menghitung totalHarga berdasarkan kuantitas
-        int totalHarga = hargaPerTiket * kuantitas;
-        
-        // mengonversi tanggal ke format yg sesuai utk MySQL
         String mysqlTanggal = convertToMySQLDate(tanggal);
         try (Connection conn = dbConnection.getConnection()) {
                 String query = "UPDATE orders SET custName = ?, date = ?, ticketType = ?, quantity = ?, price = ? WHERE id = ?";
-                // mengubah data pesanan di db menggunakan PreparedStatement
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, nama);
                     ps.setString(2, mysqlTanggal);
@@ -394,20 +347,15 @@ public class orderForm extends javax.swing.JFrame {
                     ps.setString(6, orderID);
                     
                     int updatedRows = ps.executeUpdate();
-                    // jika data berhasil diubah
                     if (updatedRows > 0){
                         JOptionPane.showMessageDialog(this, "Data Anda telah berhasil diubah! Terima kasih.");
-                        // memuat ulang data tbl
                         loadTableData();
-                        // membersihkan form
                         clearForm();
-                    // jika tdk ada data yg diubah
                     } else {
                         JOptionPane.showMessageDialog(this, "Gagal mengubah data. Silakan coba lagi.");
                     }
                     
                 }
-            // menangani error jika terjadi masalah dlm query SQL
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(this, "Pengubahan data gagal. Pesan error: " + ex.getMessage());
                 
@@ -415,34 +363,27 @@ public class orderForm extends javax.swing.JFrame {
     }//GEN-LAST:event_btnUbahActionPerformed
 
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
-        // mengecek apakah ada baris yg dipilih di tbl
         int selectedRow = tblData.getSelectedRow();
         if (selectedRow == -1){
             JOptionPane.showMessageDialog(this, "Silakan pilih data yang ingin Anda hapus untuk melanjutkan.");
             return;
         }
         
-        // menampilkan dialog confirm
         int confirm = JOptionPane.showConfirmDialog(this, "Apakah Anda yakin ingin menghapus data ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION){
             return;
         }
         
-        // mengambil id pesanan yg dipilih dari tbl
         String selectedID = tblData.getValueAt(selectedRow, 0).toString();
         
         try (Connection conn = dbConnection.getConnection()){
             String query = "DELETE FROM orders WHERE id = ?";
-            // menjalankan query DELETE utk menghapus data
             try(PreparedStatement ps = conn.prepareStatement(query)){
                 ps.setString(1, selectedID);
                 ps.executeUpdate();
-                 // jika data berhasil dihapus
                 JOptionPane.showMessageDialog(this, "Data telah berhasil dihapus dari sistem.");
-                // memuat ulang data tbl
                 loadTableData();
             }
-        // menangani error jika terjadi masalah dlm query SQL
         } catch (SQLException ex){
             JOptionPane.showMessageDialog(this, "Penghapusan data gagal. Pesan error: " + ex.getMessage());
         }
@@ -504,46 +445,44 @@ public class orderForm extends javax.swing.JFrame {
     private javax.swing.JTextField txtTanggal;
     // End of variables declaration//GEN-END:variables
 
-    // memeriksa apakah tanggal sesuai dgn format
+    private double calculatePrice(String tipeTiket, int kuantitas){
+        ticket selectedTicket;
+        if(tipeTiket.equalsIgnoreCase("Fast Track")){
+            selectedTicket = new fastTrack("Fast Track", 500000, "Antrian yang lebih singkat, Akses Prioritas, Peluang untuk mengunjungi banyak wahana");
+        } else {
+            selectedTicket = new regular ("Regular", 200000, 50);
+        }
+        return selectedTicket.getPrice()*kuantitas;
+    }
+    
     private boolean validateDate(String tanggal) {
         return tanggal.matches("\\d{2}/\\d{2}/\\d{4}");
     }
 
-    // mengonversi tanggal dari format dd//mm/yyyy ke format yyyy-mm-dd
     private String convertToMySQLDate(String tanggal) {
-        // menggunakan SimpleDateFormat utk memparsing tanggal dari format input dan mengubahnya ke format MySQL
         SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy");
         SimpleDateFormat mysqlFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         try {
-            // jika parsing berhasil, mengembalikan tanggal dlm format MySQl
             java.util.Date date = inputFormat.parse(tanggal);
             return mysqlFormat.format(date);
         } catch (ParseException e) {
-            // jika terjadi kesalahan dlm parsing, mengembalikan null
             return null;
         }
     }
 
     private void loadTableData() {
     
-        // mengambil model tbl utk mengatur data
         DefaultTableModel model = (DefaultTableModel) tblData.getModel();
-        // mengatur ulang jumlah baris tbl
         model.setRowCount(0);
 
-        // query SQL utk mengambil semua data dari tbl orders
         String query = "SELECT * FROM orders";
 
-        // membuka koneksi ke db dan menjalankan query utk mendapatkan data dari db
         try (Connection con = dbConnection.getConnection();
          
-            // menjalankan query
             Statement stmt = con.createStatement();
-            // menyimpan hasil query
             ResultSet rs = stmt.executeQuery(query)) {
 
-        // menelusuri tiap baris hasil qury dan mengambil data dari kolom yg sesuai
         while (rs.next()) {
             int id = rs.getInt("id");
             String nama = rs.getString("custName");
@@ -552,25 +491,19 @@ public class orderForm extends javax.swing.JFrame {
             int kuantitas = rs.getInt("quantity");
             int harga = rs.getInt("price");
 
-            // menambahkan data ke tbl dgn menambahkan baris baru pd model tbl
             model.addRow(new Object[]{id, nama, tanggal, tipeTiket, kuantitas, harga});
         }
 
-    // jika terjadi kesalahan dlm pemuatan data
     } catch (SQLException e) {
         JOptionPane.showMessageDialog(this, "Pemuatan data dari database gagal. Pesan error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
 
     private void clearForm() {
-        // mengosongkan txtNama, txtTanggal
         txtNama.setText("");
         txtTanggal.setText("");
-        // mengatur ulang pilihan jcbTipe ke indeks pertama
         jcbTipe.setSelectedIndex(0);
-        // mengosongkan txtKuantitas
         txtKuantitas.setText("");
-        //mengatur txtHarga menjadi Rp 0
         txtHarga.setText("Rp 0");
     }
 

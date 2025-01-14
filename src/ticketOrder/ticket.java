@@ -9,20 +9,15 @@ package ticketOrder;
  * @author Lenovo
  */
 
-// menyimpan informasi (jenis tiket, harga)
-public class ticket {
-    // menyimpan jenis tiket (Fast Track, Regular)
-    private String ticketType;
-    // menyimpan harga tiket
-    private double price;
+public abstract class ticket {
+    protected String ticketType;
+    protected double price;
 
-    // Constructor utk menginisialisasi ticketType dan price saat objek ticket dibuat
     public ticket(String ticketType, double price) {
         this.ticketType = ticketType;
         this.price = price;
     }
 
-    // Getter utk mengambil nilai
     public String getTicketType() {
         return ticketType;
     }
@@ -31,7 +26,6 @@ public class ticket {
         return price;
     }
 
-    // Setter utk mengubah nilai 
     public void setTicketType(String ticketType) {
         this.ticketType = ticketType;
     }
